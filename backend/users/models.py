@@ -1,3 +1,5 @@
+from re import IGNORECASE
+
 from django.db import models
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -17,28 +19,22 @@ class UserManager(BaseUserManager):
         """
         Create and save a user with the given email, and password.
         """
-        user = self.model(phone_number=phone_number, **extra_fields)
+        user = self.model(
+            phone_number=phone_number,
+            **extra_fields
+        )
         user.password = make_password(password)
         user.save(using=self._db)
         return user
 
     def create_user(self, phone_number=None, password=None, **extra_fields):
-        def generate_referral_code():
-            ref_code = generate_code(length=6, referral=True)
-            if User.objects.filter(ref_code=ref_code).exists():
-                ref_code = generate_referral_code()
-            return ref_code
-
-        extra_fields.setdefault("ref_code", generate_referral_code())
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(phone_number, password, **extra_fields)
 
     def create_superuser(self, phone_number=None, password=None, **extra_fields):
-        extra_fields.setdefault("ref_code", None)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-
         if extra_fields.get("is_staff") is not True:
             raise ValueError("Superuser must have is_staff=True.")
         if extra_fields.get("is_superuser") is not True:
@@ -55,12 +51,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name='Phone number',
         max_length=11,
         primary_key=True,
-        validators=[PhoneNumberValidator]
+        validators=[PhoneNumberValidator(flags=IGNORECASE)]
     )
     ref_code = models.CharField(
         max_length=6,
         verbose_name='Referral code',
-        null=True
+        null=True,
+        unique=True
     )
     first_name = models.CharField(
         max_length=150,
