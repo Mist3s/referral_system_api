@@ -26,7 +26,7 @@ class UserManager(BaseUserManager):
         def generate_referral_code():
             ref_code = generate_code(length=6, referral=True)
             if User.objects.filter(ref_code=ref_code).exists():
-                generate_referral_code()
+                ref_code = generate_referral_code()
             return ref_code
 
         extra_fields.setdefault("ref_code", generate_referral_code())
